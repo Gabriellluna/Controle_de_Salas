@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for
-
+from datetime import datetime
 app = Flask(__name__)
 
 # def verifica_usuario():
@@ -32,6 +32,34 @@ def salvar_sala(tipo, capacidade, descricao):
     texto = f"{tipo},{capacidade},{descricao}\n"
     with open("salas.csv", "a") as arquivo_salas:
         arquivo_salas.write(texto)
+        
+def salvar_reserva(sala, inicio, fim):
+    
+    inicio_dt = inicio.date()
+    fim_dt = fim.date()
+    
+    print(inicio_dt)
+    print(fim_dt)
+    
+    # inicio_dt = datetime.fromisoformat(inicio) 
+    # fim_dt = datetime.fromisoformat(fim)
+    
+    # inicio_formatado = inicio_dt.strftime("%d/%m/%Y - %H:%M")
+    # fim_formatado = fim_dt.strftime("%d/%m/%Y - %H:%M")
+    
+    texto = f"{sala},{inicio_formatado},{fim_formatado}\n"
+    
+    with open("reservas.csv", "a") as arquivo_reservas:
+        arquivo_reservas.write(texto)
+       
+        
+def ler_salas():
+    salas = []
+    with open("salas.csv", "r") as arquivo_salas:
+        for linha in arquivo_salas:
+            dados = linha.strip().split(",")
+            salas.append(dados[0]) 
+    return salas      
  
 @app.route("/", methods=["GET"])
 def cadastro_form():
@@ -60,7 +88,7 @@ def cadastrar_sala():
     dado = descricao.replace("\r\n", " ")
     print(dado)
     salvar_sala(tipo,capacidade,dado)               
-    return redirect(url_for("reservar_sala"))           
+    return redirect(url_for("reservar_sala_form"))         
         
 
 
@@ -77,11 +105,17 @@ def cadastrar_sala():
 
 @app.route("/reservar-sala", methods=["GET"])
 def reservar_sala_form():
-    return render_template("reservar-sala.html")
+    salas = ler_salas()
+    return render_template("reservar-sala.html", salas=salas)
 
 @app.route("/reservar-sala", methods=["POST"])
 def reservar_sala():
-    return render_template("reservar-sala.html")
+    sala = request.form.get('sala')
+    inicio = request.form.get('inicio')
+    fim = request.form.get('fim')
+    print(sala, inicio, fim)
+    salvar_reserva(sala, inicio, fim)
+    return redirect(url_for("reservar_sala_form"))
 
 @app.route("/detalhe-reserva")
 def detalhe_reserva():
