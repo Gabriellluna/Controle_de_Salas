@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for
 from datetime import datetime
 app = Flask(__name__)
 
+usuarioatual = None
+
 # def verifica_usuario():
 #     if request.method == "POST":
 #         with open("usuarios.csv") as usuarios:
@@ -12,9 +14,6 @@ app = Flask(__name__)
 #         return redirect(url_for("cadastrar_sala"))           
 #     else:
 #         return render_template("login.html")
-
-
-               
 
 
 # def verifica_usuario(email, senha):
@@ -33,33 +32,48 @@ def salvar_sala(tipo, capacidade, descricao):
     with open("salas.csv", "a") as arquivo_salas:
         arquivo_salas.write(texto)
         
-def salvar_reserva(sala, inicio, fim):
-    
-    inicio_dt = inicio.date()
-    fim_dt = fim.date()
-    
-    print(inicio_dt)
-    print(fim_dt)
-    
-    # inicio_dt = datetime.fromisoformat(inicio) 
-    # fim_dt = datetime.fromisoformat(fim)
-    
-    # inicio_formatado = inicio_dt.strftime("%d/%m/%Y - %H:%M")
-    # fim_formatado = fim_dt.strftime("%d/%m/%Y - %H:%M")
-    
-    texto = f"{sala},{inicio_formatado},{fim_formatado}\n"
-    
+def salvar_reserva(sala, inicio, fim, usuario):      
+    texto = f"{sala},{inicio},{fim},{usuario}\n"       
     with open("reservas.csv", "a") as arquivo_reservas:
         arquivo_reservas.write(texto)
-       
-        
+            
+    
 def ler_salas():
     salas = []
     with open("salas.csv", "r") as arquivo_salas:
         for linha in arquivo_salas:
             dados = linha.strip().split(",")
-            salas.append(dados[0]) 
-    return salas      
+            sala = {
+                "tipo": dados[0],
+                "capacidade": dados[1],
+                "descricao": dados[2]
+            }
+            salas.append(sala)
+    return salas  
+
+
+def ler_reservas():
+    reservas = []
+    with open("reservas.csv", "r") as arquivo_reservas:
+        for linha in arquivo_reservas:
+            dados = linha.strip().split(",")
+            reservas.append({
+                "sala": dados[0],
+                "inicio": datetime.fromisoformat(dados[1]),
+                "fim": datetime.fromisoformat(dados[2]),
+                "usuario": dados[3]
+            })
+    return reservas
+
+def horario(sala, inicionovo, fimnovo):
+    reservas = ler_reservas()
+    for reserva in reservas:
+        if reserva["sala"] == sala:
+            inicioexist = reserva["inicio"]
+            fimexist = reserva["fim"]
+            if not (fimnovo <= inicioexist or inicionovo >= fimexist):
+                return True
+    return False
  
 @app.route("/", methods=["GET"])
 def cadastro_form():
@@ -68,13 +82,14 @@ def cadastro_form():
 
 @app.route("/", methods=["POST"])
 def cadastro():
+    global usuarioatual
     nome = request.form.get('nome-cadastro')
     sobrenome = request.form.get('sobrenome-cadastro')
     email = request.form.get('email-cadastro')
     senha = request.form.get('password-cadastro')
-    print(email)
-    salvar_usuario(nome,sobrenome,email, senha)           
-    return redirect(url_for("cadastrar_sala"))
+    salvar_usuario(nome, sobrenome, email, senha) 
+    usuarioatual = nome          
+    return redirect(url_for("cadastrar_sala_form"))
 
 @app.route("/cadastro-sala", methods=["GET"])
 def cadastrar_sala_form():
@@ -110,26 +125,42 @@ def reservar_sala_form():
 
 @app.route("/reservar-sala", methods=["POST"])
 def reservar_sala():
+    global usuarioatual
     sala = request.form.get('sala')
     inicio = request.form.get('inicio')
     fim = request.form.get('fim')
-    print(sala, inicio, fim)
-    salvar_reserva(sala, inicio, fim)
-    return redirect(url_for("reservar_sala_form"))
+
+    ininovo = datetime.fromisoformat(inicio)
+    fimnovo = datetime.fromisoformat(fim)
+
+    if horario(sala, ininovo, fimnovo):
+        return "Já existe uma reserva nesse horário"
+
+    salvar_reserva(sala, inicio, fim, usuarioatual)
+    return redirect(url_for("detalhe_reserva", sala=sala, inicio=inicio, fim=fim, usuario=usuarioatual))
 
 @app.route("/detalhe-reserva")
 def detalhe_reserva():
-    return render_template("detalhe-reserva.html")
+    sala = request.args.get('sala')
+    inicio = request.args.get('inicio')
+    fim = request.args.get('fim')
+    usuario = request.args.get('usuario')
+    inicio_dt = datetime.fromisoformat(inicio)
+    fim_dt = datetime.fromisoformat(fim)
+    inicio_formatado = inicio_dt.strftime('%d/%m/%Y %H:%M')
+    fim_formatado = fim_dt.strftime('%d/%m/%Y %H:%M')
+    
+    return render_template("detalhe-reserva.html", sala=sala, inicio=inicio_formatado, fim=fim_formatado, usuario=usuario)
 
 @app.route("/listar-salas")
 def listar_salas():
-    return render_template("listar-salas.html")
-
-
+    salas = ler_salas()
+    return render_template("listar-salas.html", salas=salas)
 
 @app.route("/reservas")
 def reservas():
-    return render_template("reservas.html")
+    reservas = ler_reservas()
+    return render_template("reservas.html", reservas=reservas)
 
 
 app.run(debug=True)
