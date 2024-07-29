@@ -4,22 +4,7 @@ app = Flask(__name__)
 
 usuarioatual = None
 
-# def verifica_usuario():
-#     if request.method == "POST":
-#         with open("usuarios.csv") as usuarios:
-                       
-#             for linha in usuarios:
-#                 dados = linha.split(",").strip()
-#                 print(dados)
-#         return redirect(url_for("cadastrar_sala"))           
-#     else:
-#         return render_template("login.html")
 
-
-# def verifica_usuario(email, senha):
-#     with open("usuarios.csv") as usuarios:
-#         for linha in usuarios:
-#             print(linha)
 
 def salvar_usuario(nome, sobrenome,email, senha):
     texto = f"{nome},{sobrenome},{email},{senha}\n"
@@ -106,16 +91,37 @@ def cadastrar_sala():
     return redirect(url_for("reservar_sala_form"))         
         
 
+def verifica_login(email2, senha2):
+         with open("usuarios.csv") as usuarios:
+            login = [] #verificação por nome e senha
+            for linha in usuarios:
+                dados = linha.strip().split(",") #salva nome, sobre, email e senha
+                email = dados[0] #salva email
+                senha = dados[-1] #salva senha
+                email2 = "gabriel" #atribui valor já existente para forçar mensagem
+                senha2 = "teste" #atribui valor já existente para forçar mensagem
+                if email2 == email and senha2 == senha:
+                    print(f"Deu bom, login correto de acesso é: {email} & {senha}") #sucesso no login 
+                    break
+                else:
+                    print("Deu ruim") #fracasso no login
+                
+         return redirect(url_for("cadastrar_sala"))           
 
-# @app.route("/login", methods=["GET", "POST"])
-# def login():
-#         email = request.form.get('email-login')
-#         senha = request.form.get('password-login')
-#         verifica_usuario(email, senha)
-   
-#         return render_template("login.html")
 
 
+@app.route("/login", methods=["GET"])
+def login():  
+    email2 = request.form.get("email-login")
+    senha2 = request.form.get("password-login") 
+    verifica_login(email2, senha2)  
+    return render_template("login.html")
+
+
+#@app.route("/login", methods=["POST"])
+#def verifica_usuario():                    # comentado porque independemente do que acontece no método POST da
+ #   email2 = request.form("email-login")   # rota login, ele entende que tem que adicionar um novo usuário 
+  #  senha2 = request.form("password-login")#no usuarios.csv
 
 
 @app.route("/reservar-sala", methods=["GET"])
