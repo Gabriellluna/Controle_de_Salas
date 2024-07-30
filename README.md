@@ -57,7 +57,7 @@ Em um grupo de 4 desenvolvedores realizamos as implementações solicitadas na a
 6. Execute o comando poetry install
 7. Instale a extensão do Python
 8. Selecione o Interpretador Python utilizando o atalho Ctrl+Shift+P
-9. Execute a aplicação Flask utilizando o comando poetry run flask --app projeto_lp3/app.py run
+9. Execute a aplicação Flask utilizando o comando poetry run flask --app reserva_app/app.py run
 10. Navegue na aplicação web e teste as funcionalidades
 
  ## **:computer: Deploy** 
