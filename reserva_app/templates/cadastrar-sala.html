@@ -14,8 +14,8 @@
         <form action="{{ url_for('cadastrar_sala') }}" method="POST">
             <div class="mb-3">
                 <label for="tipo" class="form-label">Tipo</label>
-                <select class="form-select" id="tipo" name="tipo">
-                    <option selected>Selecione um tipo</option>
+                <select class="form-select" id="tipo" name="tipo" required>
+                    <option value="" disabled selected>Selecione um tipo</option>
                     <option value="Laboratorio de Informatica">Laboratório de Informática</option>
                     <option value="Laboratorio de Quimica">Laboratório de Química</option>
                     <option value="Sala de Aula">Sala de Aula</option>
@@ -28,7 +28,7 @@
             </div>
             <div class="mb-3">
                 <label for="capacidade" class="form-label">Capacidade</label>
-                <input type="number" class="form-control" name="capacidade" id="capacidade">
+                <input type="number" class="form-control" name="capacidade" id="capacidade" required>
             </div>
             <div class="mb-3">
                 <label for="descricao" class="form-label">Descrição</label>

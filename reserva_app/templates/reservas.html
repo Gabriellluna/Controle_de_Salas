@@ -46,12 +46,12 @@
         <h1>Reservas</h1>
       </div>
     </div>
-    <div class="row mt-4">
+    <div class="row mt-4 w-50">
       <div class="col">
-        <input type="text" class="form-control" placeholder="Filtrar por nome" aria-label="Nome">
-      </div>
-      <div class="col">
-        <button class="btn btn-dark" type="submit">Filtrar</button>
+        <form method="get" action="/reservas">
+          <input type="text" class="form-control" name="sala" placeholder="Filtrar por nome da sala" aria-label="Nome da sala">
+          <button class="btn btn-dark mt-2" type="submit">Filtrar</button>
+        </form>
       </div>
     </div>
     <div class="row mt-4">
@@ -69,8 +69,8 @@
             {% for reserva in reservas %}
             <tr>
               <td>{{ reserva.sala }}</td>
-              <td>{{ reserva.inicio }}</td>
-              <td>{{ reserva.fim }}</td>
+              <td>{{ reserva.inicio.strftime('%H:%M - %d/%m/%Y') }}</td>
+              <td>{{ reserva.fim.strftime('%H:%M - %d/%m/%Y') }}</td>
               <td>{{ reserva.usuario }}</td>
             </tr>
             {% endfor %}

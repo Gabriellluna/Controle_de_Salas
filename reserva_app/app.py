@@ -1,28 +1,30 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
+
 app = Flask(__name__)
+app.secret_key = 'abgl' #define uma chave secreta para sessões e mensagens do flash
 
-usuarioatual = None
+usuarioatual = None #variável global que armazena o usuário logado
 
-
-
+#função para salvar um novo usuário no arquivo CSV
 def salvar_usuario(nome, sobrenome,email, senha):
     texto = f"{nome},{sobrenome},{email},{senha}\n"
     with open("usuarios.csv", "a") as arquivo_usuarios:
         arquivo_usuarios.write(texto)
     
-        
+#função para salvar uma nova sala no arquivo CSV       
 def salvar_sala(tipo, capacidade, descricao):
     texto = f"{tipo},{capacidade},{descricao}\n"
     with open("salas.csv", "a") as arquivo_salas:
         arquivo_salas.write(texto)
-        
+
+#função para salvar uma nova reserva no arquivo CSV        
 def salvar_reserva(sala, inicio, fim, usuario):      
     texto = f"{sala},{inicio},{fim},{usuario}\n"       
     with open("reservas.csv", "a") as arquivo_reservas:
         arquivo_reservas.write(texto)
             
-    
+#função para ler as salas do arquivo CSV    
 def ler_salas():
     salas = []
     with open("salas.csv", "r") as arquivo_salas:
@@ -36,7 +38,7 @@ def ler_salas():
             salas.append(sala)
     return salas  
 
-
+#função para ler as reservas do arquivo CSV
 def ler_reservas():
     reservas = []
     with open("reservas.csv", "r") as arquivo_reservas:
@@ -48,8 +50,10 @@ def ler_reservas():
                 "fim": datetime.fromisoformat(dados[2]),
                 "usuario": dados[3]
             })
-    return reservas
+    return list(reversed(reservas))
 
+
+#função para verificar se tem conflito de horário antes de reservar
 def horario(sala, inicionovo, fimnovo):
     reservas = ler_reservas()
     for reserva in reservas:
@@ -59,12 +63,13 @@ def horario(sala, inicionovo, fimnovo):
             if not (fimnovo <= inicioexist or inicionovo >= fimexist):
                 return True
     return False
- 
+
+#rota para exibir o formulario de cadastro
 @app.route("/", methods=["GET"])
 def cadastro_form():
     return render_template("cadastro.html")
 
-
+#rota para processar o cadastro do usuário
 @app.route("/", methods=["POST"])
 def cadastro():
     global usuarioatual
@@ -76,10 +81,12 @@ def cadastro():
     usuarioatual = nome          
     return redirect(url_for("cadastrar_sala_form"))
 
+#rota para exibir o formulario de cadastro de uma sala
 @app.route("/cadastro-sala", methods=["GET"])
 def cadastrar_sala_form():
         return render_template("cadastrar-sala.html")
-    
+
+#rota para processar o cadastro de uma nova sala 
 @app.route("/cadastro-sala", methods=["POST"])
 def cadastrar_sala():      
     tipo = request.form.get('tipo')
@@ -90,45 +97,45 @@ def cadastrar_sala():
     salvar_sala(tipo,capacidade,dado)               
     return redirect(url_for("reservar_sala_form"))         
         
-
+#função para verificar se o email e a senha estao cadastrados
 def verifica_login(email2, senha2):
-         with open("usuarios.csv") as usuarios:
-            login = [] #verificação por nome e senha
+        with open("usuarios.csv", mode='r') as usuarios:
             for linha in usuarios:
-                dados = linha.strip().split(",") #salva nome, sobre, email e senha
-                email = dados[0] #salva email
-                senha = dados[-1] #salva senha
-                email2 = "gabriel" #atribui valor já existente para forçar mensagem
-                senha2 = "teste" #atribui valor já existente para forçar mensagem
-                if email2 == email and senha2 == senha:
-                    print(f"Deu bom, login correto de acesso é: {email} & {senha}") #sucesso no login 
-                    break
-                else:
-                    print("Deu ruim") #fracasso no login
-                
-         return redirect(url_for("cadastrar_sala"))           
+                dados = linha.strip().split(",")
+                if len(dados) < 4:
+                    continue 
+                nome = dados[0]
+                email = dados[2]
+                senha = dados[3]
 
+                if email2 == email and senha2 == senha: 
+                    return nome  
+        return None 
 
+#rota para exibir e processar o formulario de login
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    global usuarioatual
+    if request.method == "POST":
+        email2 = request.form.get("email-login")
+        senha2 = request.form.get("password-login")
 
-@app.route("/login", methods=["GET"])
-def login():  
-    email2 = request.form.get("email-login")
-    senha2 = request.form.get("password-login") 
-    verifica_login(email2, senha2)  
+        nome_usuario = verifica_login(email2, senha2)
+        if nome_usuario:
+            usuarioatual = nome_usuario 
+            return redirect(url_for("cadastrar_sala"))  
+        else:
+            flash("E-mail ou senha está errado")
+            return redirect(url_for("login"))
     return render_template("login.html")
 
-
-#@app.route("/login", methods=["POST"])
-#def verifica_usuario():                    # comentado porque independemente do que acontece no método POST da
- #   email2 = request.form("email-login")   # rota login, ele entende que tem que adicionar um novo usuário 
-  #  senha2 = request.form("password-login")#no usuarios.csv
-
-
+#rota para exibir o formulario de reserva de sala
 @app.route("/reservar-sala", methods=["GET"])
 def reservar_sala_form():
     salas = ler_salas()
     return render_template("reservar-sala.html", salas=salas)
 
+#rota para processar a reserva de uma sala
 @app.route("/reservar-sala", methods=["POST"])
 def reservar_sala():
     global usuarioatual
@@ -145,6 +152,7 @@ def reservar_sala():
     salvar_reserva(sala, inicio, fim, usuarioatual)
     return redirect(url_for("detalhe_reserva", sala=sala, inicio=inicio, fim=fim, usuario=usuarioatual))
 
+#rota para exibir os detalhes de uma reserva
 @app.route("/detalhe-reserva")
 def detalhe_reserva():
     sala = request.args.get('sala')
@@ -158,15 +166,21 @@ def detalhe_reserva():
     
     return render_template("detalhe-reserva.html", sala=sala, inicio=inicio_formatado, fim=fim_formatado, usuario=usuario)
 
+#rota para listar todas as salas
 @app.route("/listar-salas")
 def listar_salas():
     salas = ler_salas()
     return render_template("listar-salas.html", salas=salas)
 
-@app.route("/reservas")
+#rota para listar todas as reservas, com filtro por sala
+@app.route("/reservas", methods=["GET"])
 def reservas():
+    sala_filtro = request.args.get('sala', '')
     reservas = ler_reservas()
+    if sala_filtro:
+        reservas = [reserva for reserva in reservas if sala_filtro.lower() in reserva["sala"].lower()]
     return render_template("reservas.html", reservas=reservas)
+
 
 
 app.run(debug=True)
