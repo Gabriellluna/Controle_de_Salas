@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
+import unicodedata
 
 app = Flask(__name__)
 app.secret_key = 'abgl' #define uma chave secreta para sessões e mensagens do flash
@@ -23,6 +24,10 @@ def salvar_reserva(sala, inicio, fim, usuario):
     texto = f"{sala},{inicio},{fim},{usuario}\n"       
     with open("reservas.csv", "a") as arquivo_reservas:
         arquivo_reservas.write(texto)
+     
+def remove_accents(input_str):
+    nfkd_form = unicodedata.normalize('NFKD', input_str)
+    return ''.join([c for c in nfkd_form if not unicodedata.combining(c)])     
             
 #função para ler as salas do arquivo CSV    
 def ler_salas():
@@ -33,7 +38,7 @@ def ler_salas():
             sala = {
                 "tipo": dados[0],
                 "capacidade": dados[1],
-                "descricao": dados[2]
+                "descricao": remove_accents(dados[2])
             }
             salas.append(sala)
     return salas  
