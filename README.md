@@ -50,7 +50,7 @@ Em um grupo de 4 desenvolvedores realizamos as implementações solicitadas na a
 ## **:open_file_folder: Instalação e Utilização**
 
 1. Instale o Poetry
-2. Clone este repositório para sua máquina local usando `git clone https://github.com/Gabriellluna/Controle_de_Salas.git`.
+2. Clone este repositório para sua máquina local usando `git clone https://github.com/Gabriellluna/Controle_de_Salas.git`
 3. Navegue até o diretório clonado e abra no VSCode.
 4. Abra o terminal do VSCode
 5. Execute o comando poetry shell
