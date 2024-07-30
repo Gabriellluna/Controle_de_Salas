@@ -38,7 +38,7 @@ Em um grupo de 4 desenvolvedores realizamos as implementações solicitadas na a
 - Cadastro usuário
 
 
-## **:bar_chart:Tecnologias Utilizadas**
+## ** :bar_chart:Tecnologias Utilizadas**
 
 - <img src="https://img.shields.io/badge/-HTML-333?style=flat&logo=HTML5" alt="HTML" style="vertical-align:middle; margin-right:5px;">: Utilizado para estruturar as páginas web.
 - <img src="https://img.shields.io/badge/-Bootstrap-333?style=flat&logo=Bootstrap" alt="Bootstrap" style="vertical-align:middle; margin-right:5px;">: Utilizado para estilizar e criar uma interface amigável ao usuário.
