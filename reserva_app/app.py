@@ -1,29 +1,47 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
+from conexao_bd import conexao_fechar, conexao_abrir
 import unicodedata
 
 app = Flask(__name__)
 app.secret_key = 'abgl' #define uma chave secreta para sessões e mensagens do flash
 
+con = conexao_abrir("localhost", "estudante1", "123456", "ControleSalas")
+
 usuarioatual = None #variável global que armazena o usuário logado
 
-#função para salvar um novo usuário no arquivo CSV
+#função para salvar um novo usuário no Banco de Dados
 def salvar_usuario(nome, sobrenome,email, senha):
-    texto = f"{nome},{sobrenome},{email},{senha}\n"
-    with open("usuarios.csv", "a") as arquivo_usuarios:
-        arquivo_usuarios.write(texto)
+ #  texto = f"{nome},{sobrenome},{email},{senha}\n"
+  #  with open("usuarios.csv", "a") as arquivo_usuarios:
+  #      arquivo_usuarios.write(texto)
+    cursor = con.cursor()
+    sql = "INSERT INTO Usuário (nome, email, senha, sobrenome) VALUES (%s, %s, %s, %s)"
+    cursor.execute(sql, (nome, email, senha, sobrenome))
+    con.commit() 
+    cursor.close()
     
-#função para salvar uma nova sala no arquivo CSV       
+#função para salvar uma nova sala no Banco de dados 
 def salvar_sala(tipo, capacidade, descricao):
-    texto = f"{tipo},{capacidade},{descricao}\n"
-    with open("salas.csv", "a") as arquivo_salas:
-        arquivo_salas.write(texto)
+    #texto = f"{tipo},{capacidade},{descricao}\n"
+    #with open("salas.csv", "a") as arquivo_salas:
+    #   arquivo_salas.write(texto)
+    cursor = con.cursor()
+    sql = "INSERT INTO Sala (tipo, capacidade, descricao) VALUES (%s, %s, %s)"
+    cursor.execute(sql, (tipo, capacidade, descricao))
+    con.commit() 
+    cursor.close()
 
-#função para salvar uma nova reserva no arquivo CSV        
-def salvar_reserva(sala, inicio, fim, usuario):      
-    texto = f"{sala},{inicio},{fim},{usuario}\n"       
-    with open("reservas.csv", "a") as arquivo_reservas:
-        arquivo_reservas.write(texto)
+#função para salvar uma nova reserva no Banco de dados      
+def salvar_reserva(Sala_idsala, inicio, fim, Usuário_idusuario):      
+    #texto = f"{sala},{inicio},{fim},{usuario}\n"       
+    #with open("reservas.csv", "a") as arquivo_reservas:
+    #    arquivo_reservas.write(texto)
+    cursor = con.cursor()
+    sql = "INSERT INTO Reserva_Sala (Sala_idsala, inicio, fim, Usuário_idusuario) VALUES (%s, %s, %s, %s)"
+    cursor.execute(sql, (Sala_idsala, inicio, fim, Usuário_idusuario))
+    con.commit() 
+    cursor.close()
      
 def remove_accents(input_str):
     nfkd_form = unicodedata.normalize('NFKD', input_str)
@@ -32,16 +50,35 @@ def remove_accents(input_str):
 #função para ler as salas do arquivo CSV    
 def ler_salas():
     salas = []
-    with open("salas.csv", "r") as arquivo_salas:
-        for linha in arquivo_salas:
-            dados = linha.strip().split(",")
-            sala = {
-                "tipo": dados[0],
-                "capacidade": dados[1],
-                "descricao": remove_accents(dados[2])
-            }
-            salas.append(sala)
-    return salas  
+    # with open("salas.csv", "r") as arquivo_salas:
+    #     for linha in arquivo_salas:
+    #         dados = linha.strip().split(",")
+    #         sala = {
+    #             "tipo": dados[0],
+    #             "capacidade": dados[1],
+    #             "descricao": remove_accents(dados[2])
+    #         }
+    #         salas.append(sala)
+    # return salas  
+    cursor = con.cursor()
+    sql = "SELECT * FROM Sala"
+    # Criando o cursor com a opção de retorno como dicionário   
+    cursor = con.cursor(dictionary=True)
+    cursor.execute(sql)
+
+
+    for (registro) in cursor:
+#         dados = linha.strip().split(",")
+        sala = { "tipo": registro['tipo'],
+                 "capacidade": registro['capacidade'],
+                 "descricao": remove_accents(registro['descricao'])
+             }
+        salas.append(sala)
+    cursor.close()
+
+
+    return salas          
+
 
 #função para ler as reservas do arquivo CSV
 def ler_reservas():
@@ -104,18 +141,34 @@ def cadastrar_sala():
         
 #função para verificar se o email e a senha estao cadastrados
 def verifica_login(email2, senha2):
-        with open("usuarios.csv", mode='r') as usuarios:
-            for linha in usuarios:
-                dados = linha.strip().split(",")
-                if len(dados) < 4:
-                    continue 
-                nome = dados[0]
-                email = dados[2]
-                senha = dados[3]
+        # with open("usuarios.csv", mode='r') as usuarios:
+           
+    cursor = con.cursor()
+    sql = "SELECT * FROM Usuário"
+    # Criando o cursor com a opção de retorno como dicionário   
+    cursor = con.cursor(dictionary=True)
+    cursor.execute(sql)
 
-                if email2 == email and senha2 == senha: 
-                    return nome  
+    for (registro) in cursor:
+#         dados = linha.strip().split(",")
+        usuario = {
+            "email": registro['email'],
+            "senha": registro['senha'],
+             }
+
+        # for linha in usuarios:
+        #     dados = linha.strip().split(",")
+        #     if len(dados) < 4:
+        #         continue 
+        #     nome = dados[0]
+        #     email = dados[2]
+        #     senha = dados[3]
+
+        if email2 == usuario["email"] and usuario["senha"] == senha2: 
+            return nome  
         return None 
+    cursor.close()
+
 
 #rota para exibir e processar o formulario de login
 @app.route("/login", methods=["GET", "POST"])
