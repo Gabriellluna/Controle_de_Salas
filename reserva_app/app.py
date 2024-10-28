@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
-from conexao_bd import conexao_fechar, conexao_abrir
+from reserva_app.conexao_bd import conexao_fechar, conexao_abrir
 import unicodedata
 
 app = Flask(__name__)
 app.secret_key = 'abgl' #define uma chave secreta para sessões e mensagens do flash
 
-con = conexao_abrir("localhost", "estudante1", "123456", "ControleSalas")
+con = conexao_abrir("127.0.0.1", "root", "", "teste_python")
 
 usuarioatual = None #variável global que armazena o usuário logado
 
@@ -16,21 +16,19 @@ def salvar_usuario(nome, sobrenome,email, senha):
   #  with open("usuarios.csv", "a") as arquivo_usuarios:
   #      arquivo_usuarios.write(texto)
     cursor = con.cursor()
-    sql = "INSERT INTO Usuário (nome, email, senha, sobrenome) VALUES (%s, %s, %s, %s)"
+    sql = "INSERT INTO usuário (nome, email, senha, sobrenome) VALUES (%s, %s, %s, %s)"
     cursor.execute(sql, (nome, email, senha, sobrenome))
     con.commit() 
     cursor.close()
     
 #função para salvar uma nova sala no Banco de dados 
-def salvar_sala(tipo, capacidade, descricao):
-    #texto = f"{tipo},{capacidade},{descricao}\n"
-    #with open("salas.csv", "a") as arquivo_salas:
-    #   arquivo_salas.write(texto)
+def salvar_sala(tipo, capacidade, descricao, ativa=1):
     cursor = con.cursor()
-    sql = "INSERT INTO Sala (tipo, capacidade, descricao) VALUES (%s, %s, %s)"
-    cursor.execute(sql, (tipo, capacidade, descricao))
+    sql = "INSERT INTO sala (tipo, capacidade, descricao, ativa) VALUES (%s, %s, %s, %s)"
+    cursor.execute(sql, (tipo, capacidade, descricao, ativa))
     con.commit() 
     cursor.close()
+
 
 #função para salvar uma nova reserva no Banco de dados      
 def salvar_reserva(Sala_idsala, inicio, fim, Usuário_idusuario):      
@@ -38,7 +36,7 @@ def salvar_reserva(Sala_idsala, inicio, fim, Usuário_idusuario):
     #with open("reservas.csv", "a") as arquivo_reservas:
     #    arquivo_reservas.write(texto)
     cursor = con.cursor()
-    sql = "INSERT INTO Reserva_Sala (Sala_idsala, inicio, fim, Usuário_idusuario) VALUES (%s, %s, %s, %s)"
+    sql = "INSERT INTO reserva_sala (idsala, inicio, fim, idusuario) VALUES (%s, %s, %s, %s)"
     cursor.execute(sql, (Sala_idsala, inicio, fim, Usuário_idusuario))
     con.commit() 
     cursor.close()
@@ -47,40 +45,28 @@ def remove_accents(input_str):
     nfkd_form = unicodedata.normalize('NFKD', input_str)
     return ''.join([c for c in nfkd_form if not unicodedata.combining(c)])     
             
-#função para ler as salas do arquivo CSV    
+#função para ler as salas 
 def ler_salas():
     salas = []
-    # with open("salas.csv", "r") as arquivo_salas:
-    #     for linha in arquivo_salas:
-    #         dados = linha.strip().split(",")
-    #         sala = {
-    #             "tipo": dados[0],
-    #             "capacidade": dados[1],
-    #             "descricao": remove_accents(dados[2])
-    #         }
-    #         salas.append(sala)
-    # return salas  
-    cursor = con.cursor()
-    sql = "SELECT * FROM Sala"
-    # Criando o cursor com a opção de retorno como dicionário   
     cursor = con.cursor(dictionary=True)
+    sql = "SELECT idsala, tipo, capacidade, descricao,ativa FROM sala"  # Certifique-se de que `id` está incluído na consulta.
     cursor.execute(sql)
 
-
-    for (registro) in cursor:
-#         dados = linha.strip().split(",")
-        sala = { "tipo": registro['tipo'],
-                 "capacidade": registro['capacidade'],
-                 "descricao": remove_accents(registro['descricao'])
-             }
+    for registro in cursor:
+        sala = {
+            "idsala": registro['idsala'],
+            "tipo": registro['tipo'],
+            "capacidade": registro['capacidade'],
+            "descricao": remove_accents(registro['descricao']),
+            "ativa": registro['ativa'] 
+        }
         salas.append(sala)
+
     cursor.close()
+    return salas
+ 
 
-
-    return salas          
-
-
-#função para ler as reservas do arquivo CSV
+#função para ler as reservas 
 def ler_reservas():
     reservas = []
     with open("reservas.csv", "r") as arquivo_reservas:
@@ -141,33 +127,15 @@ def cadastrar_sala():
         
 #função para verificar se o email e a senha estao cadastrados
 def verifica_login(email2, senha2):
-        # with open("usuarios.csv", mode='r') as usuarios:
-           
-    cursor = con.cursor()
-    sql = "SELECT * FROM Usuário"
-    # Criando o cursor com a opção de retorno como dicionário   
     cursor = con.cursor(dictionary=True)
-    cursor.execute(sql)
-
-    for (registro) in cursor:
-#         dados = linha.strip().split(",")
-        usuario = {
-            "email": registro['email'],
-            "senha": registro['senha'],
-             }
-
-        # for linha in usuarios:
-        #     dados = linha.strip().split(",")
-        #     if len(dados) < 4:
-        #         continue 
-        #     nome = dados[0]
-        #     email = dados[2]
-        #     senha = dados[3]
-
-        if email2 == usuario["email"] and usuario["senha"] == senha2: 
-            return nome  
-        return None 
+    sql = "SELECT * FROM usuário WHERE email = %s AND senha = %s"
+    cursor.execute(sql, (email2, senha2))
+    usuario = cursor.fetchone()
     cursor.close()
+    
+    if usuario:
+        return usuario['nome']  # Retorna o nome do usuário logado
+    return None
 
 
 #rota para exibir e processar o formulario de login
@@ -240,5 +208,51 @@ def reservas():
     return render_template("reservas.html", reservas=reservas)
 
 
+@app.route("/excluir-sala/<int:id>", methods=["POST"])
+def excluir_sala(id):
+    cursor = con.cursor()
+    sql = "DELETE FROM sala WHERE idsala = %s"
+    cursor.execute(sql, (id,))
+    con.commit()
+    cursor.close()
+    return redirect(url_for("listar_salas"))
 
+@app.route("/desativar-sala/<int:id>", methods=["POST"])
+def desativar_sala(id):
+    cursor = con.cursor()
+    sql = "UPDATE sala SET ativa = 0 WHERE idsala = %s"
+    cursor.execute(sql, (id,))
+    con.commit()
+    cursor.close()
+    return redirect(url_for("listar_salas"))
+
+@app.route("/ativar-sala/<int:id>", methods=["POST"])
+def ativar_sala(id):
+    cursor = con.cursor()
+    sql = "UPDATE sala SET ativa = 1 WHERE idsala = %s"
+    cursor.execute(sql, (id,))
+    con.commit()
+    cursor.close()
+    return redirect(url_for("listar_salas"))
+
+@app.route("/editar-sala/<int:idsala>", methods=["GET", "POST"])
+def editar_sala(idsala):
+    cursor = con.cursor(dictionary=True)
+    if request.method == "POST":
+        tipo = request.form.get("tipo")
+        capacidade = request.form.get("capacidade")
+        descricao = request.form.get("descricao")
+        sql = "UPDATE sala SET tipo = %s, capacidade = %s, descricao = %s WHERE idsala = %s"
+        cursor.execute(sql, (tipo, capacidade, descricao, idsala))
+        con.commit()
+        cursor.close()
+        return redirect(url_for("listar_salas"))
+    else:
+        sql = "SELECT * FROM sala WHERE idsala = %s"
+        cursor.execute(sql, (idsala,))
+        sala = cursor.fetchone()
+        cursor.close()
+        return render_template("editar-sala.html", sala=sala)
+    
+conexao_fechar(con)    
 app.run(debug=True, port= 5001)

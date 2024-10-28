@@ -29,13 +29,24 @@
             <td>{{ sala.tipo }}</td>
             <td>{{ sala.descricao }}</td>
             <td>{{ sala.capacidade }}</td>
-            <td>Sim</td>
+            <td>{{ 'Sim' if sala.ativa == 1 else 'Não' }}</td>
             <td>
-              <form action="">
-                <button class="btn btn-sm btn-dark" type="submit" formaction="cadastrar-sala.html">Editar</button>
-                <button class="btn btn-sm btn-dark" type="submit" formaction="reservas.html">Desativar</button>
-                <button class="btn btn-sm btn-dark" type="submit" formaction="/excluir-sala/{{ loop.index }}">Excluir</button>
+
+              <a href="{{ url_for('editar_sala', idsala=sala.idsala) }}" class="btn btn-sm btn-dark">Editar</a>
+
+            {% if sala.ativa == 1 %}
+              <form action="{{ url_for('desativar_sala', id=sala.idsala) }}" method="post" style="display:inline;">
+                <button class="btn btn-sm btn-dark" type="submit">Desativar</button>
               </form>
+            {% else %}
+              <form action="{{ url_for('ativar_sala', id=sala.idsala) }}" method="post" style="display:inline;">
+                <button class="btn btn-sm btn-dark" type="submit">Ativar</button>
+              </form>
+            {% endif %}
+              <form action="/excluir-sala/{{ sala.idsala }}" method="post" style="display:inline;">
+                <button class="btn btn-sm btn-dark" type="submit">Excluir</button>
+              </form>
+
             </td>
           </tr>
           {% endfor %}

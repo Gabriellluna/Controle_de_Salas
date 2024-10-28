@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Sala{% endblock %}
+
+{% block content %}
+<h2>Editar Sala</h2>
+<form action="/editar-sala/{{ sala.idsala }}" method="post">
+    <div class="mb-3">
+        <label for="tipo" class="form-label">Tipo:</label>
+        <select class="form-select" id="tipo" name="tipo" required>
+            <option value="" disabled>Selecione um tipo</option>
+            <option value="Laboratorio de Informatica" {% if sala.tipo == 'Laboratorio de Informatica' %}selected{% endif %}>Laboratório de Informática</option>
+            <option value="Laboratorio de Quimica" {% if sala.tipo == 'Laboratorio de Quimica' %}selected{% endif %}>Laboratório de Química</option>
+            <option value="Sala de Aula" {% if sala.tipo == 'Sala de Aula' %}selected{% endif %}>Sala de Aula</option>
+            <option value="Ginasio" {% if sala.tipo == 'Ginasio' %}selected{% endif %}>Ginásio</option>
+            <option value="Laboratorio de Biologia" {% if sala.tipo == 'Laboratorio de Biologia' %}selected{% endif %}>Laboratório de Biologia</option>
+            <option value="Sala de Leitura" {% if sala.tipo == 'Sala de Leitura' %}selected{% endif %}>Sala de Leitura</option>
+            <option value="Sala de Video" {% if sala.tipo == 'Sala de Video' %}selected{% endif %}>Sala de Vídeo</option>
+            <option value="Auditorio" {% if sala.tipo == 'Auditorio' %}selected{% endif %}>Auditório</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="capacidade"  class="form-label">Capacidade:</label>
+        <input type="number"  class="form-control"  name="capacidade" id="capacidade" value="{{ sala.capacidade }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="descricao" class="form-label">Descrição:</label>
+        <textarea name="descricao"  class="form-control"  id="descricao" required>{{ sala.descricao }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-dark">Salvar</button>
+</form>
+{% endblock %}
