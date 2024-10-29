@@ -18,7 +18,9 @@
         <select class="form-select" id="sala" name="sala" required>
           <option selected disabled value="">Selecione a sala</option>
           {% for sala in salas %}
+          {% if sala.ativa == 1 %}
           <option value="{{ sala.tipo }}">{{ sala.tipo }}</option>
+          {% endif %}
           {% endfor %}
         </select>
       </div>

@@ -6,7 +6,7 @@ import unicodedata
 app = Flask(__name__)
 app.secret_key = 'abgl' #define uma chave secreta para sessões e mensagens do flash
 
-con = conexao_abrir("127.0.0.1", "root", "", "teste_python")
+con = conexao_abrir("127.0.0.1", "estudante1", "123", "teste_python")
 
 usuarioatual = None #variável global que armazena o usuário logado
 
